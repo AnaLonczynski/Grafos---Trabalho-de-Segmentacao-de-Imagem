@@ -13,7 +13,7 @@
 - Bruno Rafael Santos Oliveira
 - Leticia Silva Rocha
 - Matheus Eduardo Campos Soares
-- Rayssa Mel
+- Rayssa Mell de Souza Silva
 - Thiago Pereira de Oliveira
 
 ## 🧱 Estrutura do Projeto
