@@ -7,6 +7,12 @@
 > geradoras mínimas/máximas e de arborescências mínimas/máximas para aplicação
 > em segmentação de imagens.
 
+## 🖼️ Imagem Utilizada para Segmentação
+> A imagem abaixo será utilizada como base para o processo de segmentação desenvolvido no projeto:
+
+<p align="center">
+  <img src="https://s2.best-wallpaper.net/wallpaper/2880x1800/1607/Hayao-Miyazaki-My-Neighbor-Totoro-happy-fishing_2880x1800.jpg" width="600">
+</p>
 
 ## 👨‍💻 Nomes dos Participantes
 - Ana Clara Lonczynski
