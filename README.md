@@ -31,6 +31,7 @@
 │   ├── construir_grafo.py
 │   ├── gerar_arvore_minima.py
 │   ├── segmentar_imagem.py
+|   ├── preprocs.py
 │   ├── main.py
 │
 ├── 📁 imagens/
