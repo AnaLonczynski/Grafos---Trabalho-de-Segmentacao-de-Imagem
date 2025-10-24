@@ -2,7 +2,7 @@
 
 > 🧠 **Grafos** - Trabalho Prático de Segmentação de imagem
 
-## 📌 Obejtivo do Trabalho
+## 📌 Objetivo do Trabalho
 > O objetivo deste trabalho é desenvolver métodos baseados em algoritmos de árvores
 > geradoras mínimas/máximas e de arborescências mínimas/máximas para aplicação
 > em segmentação de imagens.
