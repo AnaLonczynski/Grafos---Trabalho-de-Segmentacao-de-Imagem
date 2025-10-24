@@ -30,10 +30,17 @@ except ImportError:
     print("Verifique se o seu arquivo (Pessoa 2) está salvo como 'grafo_basico.py' na mesma pasta.")
     sys.exit(1)
 
+try:
+    from pesos_grafo import calcular_pesos_arestas
+except ImportError:
+    print("ERRO: Não foi possível encontrar o arquivo 'grafo_pesos.py'.")
+    print("Verifique se você criou este arquivo na mesma pasta.")
+    sys.exit(1)
+
 # --- INÍCIO DO TESTE ---
 
 # Defina o nome da imagem a ser testada
-NOME_ARQUIVO_TESTE = "totoro.jpg"
+NOME_ARQUIVO_TESTE = "minitotoro.jpeg"
 
 print("--- INICIANDO TESTE DE INTEGRAÇÃO (PESSOA 1 + PESSOA 2) ---")
 
@@ -70,7 +77,7 @@ print(f"Total de pixels (nós do grafo): {total_pixels}")
 
 
 # ==========================================================
-# ETAPA 3: Executar o seu código (Pessoa 2)
+# ETAPA 2: Executar o seu código (Pessoa 2)
 # ==========================================================
 print(f"\n[Pessoa 2] Criando o grafo de adjacência (8-vizinhos)...")
 
@@ -79,6 +86,19 @@ print(f"\n[Pessoa 2] Criando o grafo de adjacência (8-vizinhos)...")
 lista_arestas = criar_grafo_adjacencia(altura, largura)
 
 print("[Pessoa 2] Grafo estrutural criado com sucesso.")
+
+
+# ==========================================================
+# ETAPA 3: Executar o cálculo de pesos
+# ==========================================================
+
+print(f"\n[Pessoa 3] Calculando pesos (dist. Euclidiana) para {len(lista_arestas)} arestas...")
+
+# Chama a função do arquivo 'grafo_pesos.py'
+# Esta é a sua "Saída Final" para a AGM
+lista_arestas_com_pesos = calcular_pesos_arestas(matriz_processada, lista_arestas)
+
+print("[Pessoa 3] Cálculo de pesos concluído.")
 
 # ==========================================================
 # ETAPA 4: Verificar os resultados
@@ -94,12 +114,26 @@ if total_pixels > 0:
     ratio = len(lista_arestas) / total_pixels
     print(f"Taxa (Arestas / Nós): {ratio:.4f}")
     print("(Para 8-vizinhos, este valor deve ser próximo de 4.0 para imagens grandes)")
+    
+    ratio = len(lista_arestas_com_pesos) / total_pixels
+    print(f"Taxa (Arestas / Nós): {ratio:.4f}")
 
 # Imprime uma amostra para ver se parece correto
 print("\nAmostra das primeiras 10 arestas geradas:")
-print(lista_arestas[:10])
+print(lista_arestas[:20])
 
 print("\nAmostra das últimas 10 arestas geradas:")
-print(lista_arestas[-10:])
+print(lista_arestas[-20:])
+
+# Imprime uma amostra para ver se parece correto
+print("\nAmostra das primeiras 10 arestas COM PESO geradas:")
+print("(Formato: (Peso, Pixel_U, Pixel_V))")
+for aresta in lista_arestas_com_pesos[:10]:
+    print(f"  (Peso: {aresta[0]:.4f}, U: {aresta[1]}, V: {aresta[2]})")
+
+print("\nAmostra das últimas 10 arestas COM PESO geradas:")
+for aresta in lista_arestas_com_pesos[-10:]:
+    print(f"  (Peso: {aresta[0]:.4f}, U: {aresta[1]}, V: {aresta[2]})")
+
 
 print("\n--- TESTE DE INTEGRAÇÃO CONCLUÍDO ---")
