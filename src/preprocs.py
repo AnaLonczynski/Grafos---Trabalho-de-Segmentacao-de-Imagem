@@ -71,7 +71,7 @@ def preprocessar_imagem(caminho_imagem, aplicar_blur=True, kernel_blur=(5, 5)):
 
 # FFFFFF
 
-imagem = preprocessar_imagem("minitotoro.jpeg")
+imagem = preprocessar_imagem("totoro_rebaixado.jpg")
 
 if imagem is not None:
     print(imagem.shape)  # Exibe o formato (altura, largura, canais)

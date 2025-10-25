@@ -1,7 +1,7 @@
 # Arquivo: grafo_pesos.py
 import numpy as np
 
-def calcular_pesos_arestas(matriz_imagem, arestas):
+def calcular_pesos_arestas(matriz_imagem, arestas, barra_progresso=None):
     """
     Calcula o peso de cada aresta no grafo.
     O peso é a distância Euclidiana entre as cores (L*a*b*)
@@ -17,7 +17,6 @@ def calcular_pesos_arestas(matriz_imagem, arestas):
     - list: Uma lista de tuplas no formato (peso, u, v), 
             pronta para ser usada por um algoritmo de AGM (MST).
     """
-    print(f"Iniciando cálculo de pesos para {len(arestas)} arestas...")
 
     # 1. Obter dimensões da imagem
     altura, largura, _ = matriz_imagem.shape
@@ -47,7 +46,9 @@ def calcular_pesos_arestas(matriz_imagem, arestas):
         
         # 7. Adicionar à lista no formato (peso, u, v)
         arestas_com_pesos.append((peso, u, v))
+
+        if barra_progresso:
+            barra_progresso.update(1)
         
-    print("Cálculo de pesos concluído.")
     
     return arestas_com_pesos

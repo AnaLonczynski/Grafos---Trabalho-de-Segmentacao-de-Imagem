@@ -10,12 +10,16 @@
 
 import sys
 import numpy as np
-import os  # <-- ADICIONE ESTA LINHA
+import os
+from tqdm import tqdm #
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, script_dir)
 
-# 1. Importar as funções dos outros arquivos
+# ==========================================================
+# ETAPA 0: catch de possiveis erros
+# ==========================================================
+
 try:
     from preprocs import preprocessar_imagem
 except ImportError:
@@ -37,34 +41,40 @@ except ImportError:
     print("Verifique se você criou este arquivo na mesma pasta.")
     sys.exit(1)
 
+try:
+    from mst_algoritmo import kruskal_mst
+except ImportError:
+    print("ERRO: Não foi possível encontrar o arquivo 'mst_algoritmo.py'.")
+    print("Verifique se o arquivo da Pessoa 4 está na mesma pasta.")
+    sys.exit(1)
+
 # --- INÍCIO DO TESTE ---
 
 # Defina o nome da imagem a ser testada
-NOME_ARQUIVO_TESTE = "minitotoro.jpeg"
+NOME_ARQUIVO_TESTE = "totoro_rebaixado.jpg"
 
-print("--- INICIANDO TESTE DE INTEGRAÇÃO (PESSOA 1 + PESSOA 2) ---")
+print("--- INICIANDO TESTE DE INTEGRAÇÃO (PESSOA 1 + 2 + 3 + 4) ---")
 
 # ==========================================================
-# ETAPA 1: Executar o código da Pessoa 1
+# ETAPA 1: Pré-processamento
 # ==========================================================
-print(f"\n[Pessoa 1] Processando a imagem: '{NOME_ARQUIVO_TESTE}'...")
 
-# Chama a função do arquivo 'preprocs.py'
+tqdm.write(f"\n[Pessoa 1] Processando a imagem: '{NOME_ARQUIVO_TESTE}'...")
+
 matriz_processada = preprocessar_imagem(NOME_ARQUIVO_TESTE)
 
-# Checagem de erro
 if matriz_processada is None:
-    print(f"ERRO FATAL: Falha ao carregar '{NOME_ARQUIVO_TESTE}'.")
-    print("Verifique se o nome do arquivo está correto e se ele existe na pasta.")
+    tqdm.write(f"ERRO FATAL: Falha ao carregar '{NOME_ARQUIVO_TESTE}'.")
+    tqdm.write("Verifique se o nome do arquivo está correto e se ele existe na pasta.")
     sys.exit(1)
 
-print("[Pessoa 1] Imagem processada com sucesso.")
+tqdm.write("[Pessoa 1] Imagem processada com sucesso.")
 
 
 # ==========================================================
-# ETAPA 2: Passar a informação para a Pessoa 2
+# ETAPA 2: Informação e Estrutura do Grafo
 # ==========================================================
-print("\n[Transição] Extraindo dimensões da matriz...")
+tqdm.write("\n[Transição] Extraindo dimensões da matriz...")
 
 # A 'matriz_processada' é um array NumPy.
 # A forma (shape) é (altura, largura, canais)
@@ -72,68 +82,65 @@ altura = matriz_processada.shape[0]
 largura = matriz_processada.shape[1]
 total_pixels = altura * largura
 
-print(f"Dimensões identificadas: Altura={altura}, Largura={largura}")
-print(f"Total de pixels (nós do grafo): {total_pixels}")
+tqdm.write(f"Dimensões identificadas: Altura={altura}, Largura={largura}")
+tqdm.write(f"Total de pixels (nós do grafo): {total_pixels}")
 
-
-# ==========================================================
-# ETAPA 2: Executar o seu código (Pessoa 2)
-# ==========================================================
-print(f"\n[Pessoa 2] Criando o grafo de adjacência (8-vizinhos)...")
-
+tqdm.write(f"\n[Pessoa 2] Criando o grafo de adjacência (8-vizinhos)...")
 # Chama a sua função do arquivo 'grafo_basico.py'
-# Esta é a sua "Saída"
 lista_arestas = criar_grafo_adjacencia(altura, largura)
-
-print("[Pessoa 2] Grafo estrutural criado com sucesso.")
+tqdm.write("[Pessoa 2] Grafo estrutural criado com sucesso.")
 
 
 # ==========================================================
 # ETAPA 3: Executar o cálculo de pesos
 # ==========================================================
 
-print(f"\n[Pessoa 3] Calculando pesos (dist. Euclidiana) para {len(lista_arestas)} arestas...")
+tqdm.write(f"\n[Pessoa 3] Calculando pesos (dist. Euclidiana) para {len(lista_arestas)} arestas...")
+# Cria uma instância de barra de progresso para esta etapa
+barra_pesos = tqdm(total=len(lista_arestas), desc="Calculando Pesos", unit=" arestas", leave=True, file=sys.stdout)
 
-# Chama a função do arquivo 'grafo_pesos.py'
-# Esta é a sua "Saída Final" para a AGM
-lista_arestas_com_pesos = calcular_pesos_arestas(matriz_processada, lista_arestas)
+# Chama a função, criando a lista.
+lista_arestas_com_pesos = calcular_pesos_arestas(matriz_processada, lista_arestas, barra_pesos)
 
-print("[Pessoa 3] Cálculo de pesos concluído.")
+# Fecha a barra de progresso
+barra_pesos.close()
+
+tqdm.write("[Pessoa 3] Cálculo de pesos concluído.")
+
 
 # ==========================================================
-# ETAPA 4: Verificar os resultados
+# ETAPA 4: Executar o algoritmo de Kruskal
 # ==========================================================
-print("\n--- RESULTADOS DO TESTE ---")
-print(f"Total de Nós (Pixels): {total_pixels}")
-print(f"Total de Arestas (Conexões): {len(lista_arestas)}")
+
+tqdm.write("\n[Pessoa 4] Executando o algoritmo de Kruskal (Árvore Geradora Mínima)...")
+# Cria uma instância de barra de progresso para esta etapa
+barra_kruskal = tqdm(total=len(lista_arestas_com_pesos), desc="Executando Kruskal", unit=" arestas", leave=True, file=sys.stdout)
+
+# Chama a função, passando o objeto 'barra_kruskal' como argumento (aqui eh criado a lista  mst(peso, u, v)).
+mst = kruskal_mst(lista_arestas_com_pesos, total_pixels, barra_kruskal)
+
+# Fecha a barra de progresso
+barra_kruskal.close()
+
+tqdm.write(f"[Pessoa 4] Kruskal executado com sucesso.")
+
+peso_total = sum([peso for peso, _, _ in mst])
+
+# ==========================================================
+tqdm.write("\n--- TESTE DE INTEGRAÇÃO (1 + 2 + 3 + 4) FINALIZADO COM SUCESSO ---")
+# ==========================================================
+
+
+# ==========================================================
+# ETAPA 5: Resultados
+# ==========================================================
+tqdm.write("\n--- RESULTADOS DO TESTE ---")
+tqdm.write(f"Total de Nós (Pixels): {total_pixels}")
+tqdm.write(f"Total de Arestas (Conexões): {len(lista_arestas)}")
 
 if total_pixels > 0:
-    # Para um grafo 8-vizinhanças, o número de arestas se aproxima de 4 * N
-    # (onde N é o total de pixels), pois cada pixel se conecta a 4 vizinhos
-    # (os outros 4 são cobertos por conexões "de volta")
     ratio = len(lista_arestas) / total_pixels
-    print(f"Taxa (Arestas / Nós): {ratio:.4f}")
-    print("(Para 8-vizinhos, este valor deve ser próximo de 4.0 para imagens grandes)")
-    
-    ratio = len(lista_arestas_com_pesos) / total_pixels
-    print(f"Taxa (Arestas / Nós): {ratio:.4f}")
-
-# Imprime uma amostra para ver se parece correto
-print("\nAmostra das primeiras 10 arestas geradas:")
-print(lista_arestas[:20])
-
-print("\nAmostra das últimas 10 arestas geradas:")
-print(lista_arestas[-20:])
-
-# Imprime uma amostra para ver se parece correto
-print("\nAmostra das primeiras 10 arestas COM PESO geradas:")
-print("(Formato: (Peso, Pixel_U, Pixel_V))")
-for aresta in lista_arestas_com_pesos[:10]:
-    print(f"  (Peso: {aresta[0]:.4f}, U: {aresta[1]}, V: {aresta[2]})")
-
-print("\nAmostra das últimas 10 arestas COM PESO geradas:")
-for aresta in lista_arestas_com_pesos[-10:]:
-    print(f"  (Peso: {aresta[0]:.4f}, U: {aresta[1]}, V: {aresta[2]})")
-
-
-print("\n--- TESTE DE INTEGRAÇÃO CONCLUÍDO ---")
+    tqdm.write(f"Taxa (Arestas / Nós): {ratio:.4f}")
+    tqdm.write("(Para 8-vizinhos, este valor deve ser próximo de 4.0 para imagens grandes)")
+    tqdm.write(f"Tamanho da MST: {len(mst)} arestas")
+    tqdm.write(f"Peso total da MST: {peso_total:.6f}")

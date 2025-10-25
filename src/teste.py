@@ -3,7 +3,7 @@ from preprocs import preprocessar_imagem
 import numpy as np  
 
 # Define o nome da imagem que você baixou
-NOME_ARQUIVO = "minitotoro.jpeg" # Mude se o nome for outro
+NOME_ARQUIVO = "totoro.jpg" # Mude se o nome for outro
 
 print(f"Processando a imagem: {NOME_ARQUIVO}...")
 
