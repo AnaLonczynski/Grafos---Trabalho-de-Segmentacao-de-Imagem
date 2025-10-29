@@ -12,6 +12,7 @@ import sys
 import numpy as np
 import os  # <-- ADICIONE ESTA LINHA
 
+
 script_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, script_dir)
 
@@ -35,6 +36,11 @@ try:
 except ImportError:
     print("ERRO: Não foi possível encontrar o arquivo 'grafo_pesos.py'.")
     print("Verifique se você criou este arquivo na mesma pasta.")
+    sys.exit(1)
+try:
+    from mst_algoritmo import kruskal_mst
+except ImportError:
+    print("ERRO: Não foi possível encontrar o arquivo 'mst_algoritmo.py'.")
     sys.exit(1)
 
 # --- INÍCIO DO TESTE ---
@@ -101,7 +107,34 @@ lista_arestas_com_pesos = calcular_pesos_arestas(matriz_processada, lista_aresta
 print("[Pessoa 3] Cálculo de pesos concluído.")
 
 # ==========================================================
-# ETAPA 4: Verificar os resultados
+# ETAPA 4: Executar Kruskal
+# ==========================================================
+print("\n[Pessoa 4] Executando o algoritmo de Kruskal (Árvore Geradora Mínima)...")
+
+print(f"Iniciando algoritmo de Kruskal...")
+print(f"Número de nós: {total_pixels}")
+print(f"Número de arestas: {len(lista_arestas_com_pesos)}")
+
+lista_arestas_com_pesos_ordenada = sorted(lista_arestas_com_pesos, key=lambda x: x[0])
+
+total_arestas_ordenadas = len(lista_arestas_com_pesos_ordenada)
+desc_kruskal = "Executando Kruskal"
+
+# Chama a função, passando o 'display_progress' como callback
+mst = kruskal_mst(
+    lista_arestas_com_pesos_ordenada, 
+    total_pixels
+)
+
+
+print("[Pessoa 4] Kruskal executado com sucesso.")
+
+print("Algoritmo de Kruskal finalizado.")
+print(f"Arestas na MST: {len(mst)}")
+
+
+# ==========================================================
+# ETAPA 5: Verificar os resultados
 # ==========================================================
 print("\n--- RESULTADOS DO TESTE ---")
 print(f"Total de Nós (Pixels): {total_pixels}")
