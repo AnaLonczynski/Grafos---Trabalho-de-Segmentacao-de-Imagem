@@ -51,7 +51,6 @@ def preprocessar_imagem(caminho_imagem, aplicar_blur=True, kernel_blur=(5, 5)):
     b_norm = imagem_lab[:,:,2] / 255.0
     imagem_normalizada = np.stack([L_norm, a_norm, b_norm], axis=2).astype(np.float32)
 
-    print (imagem_normalizada.shape)
 
     # ----------------------------------------------------
     # Tarefa 4: Aplicar blur opcional
@@ -72,7 +71,7 @@ def preprocessar_imagem(caminho_imagem, aplicar_blur=True, kernel_blur=(5, 5)):
 
 # FFFFFF
 
-imagem = preprocessar_imagem("totoro_rebaixado.jpg")
+imagem = preprocessar_imagem("minitotoro.jpeg")
 
 if imagem is not None:
     print(imagem.shape)  # Exibe o formato (altura, largura, canais)
