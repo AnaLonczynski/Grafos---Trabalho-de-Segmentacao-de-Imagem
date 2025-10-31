@@ -86,12 +86,12 @@ def visualizar_segmentacao_lab(img_rgb_normalizada: np.ndarray,
     
     plt.subplot(1, 2, 1)
     plt.imshow(img_rgb_normalizada)
-    plt.title("Imagem Original (Pessoa 1)")
+    plt.title("Imagem Original")
     plt.axis('off')
     
     plt.subplot(1, 2, 2)
     plt.imshow(img_segmentada_rgb)
-    plt.title(f"Segmentação L*a*b* Média (Pessoa 6)\n{num_segmentos} regiões")
+    plt.title(f"Segmentação RGB Média\n{num_segmentos} regiões")
     plt.axis('off')
     
     plt.tight_layout()

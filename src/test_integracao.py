@@ -3,17 +3,12 @@
 # Este arquivo serve como o "programa principal" para testar
 # a integração entre o trabalho de todas as pessoas (1 a 6).
 #
-# Ele simula como o sistema final funcionará:
-# 1. Pega a imagem (Pessoa 1)
-# 2. Cria o grafo (Pessoa 2)
-# 3. Calcula os pesos (Pessoa 3)
-# 4. Encontra a MST (Pessoa 4)
-# 5. Segmenta a MST (Pessoa 5)
-# 6. Visualiza o resultado (Pessoa 6)
+# Agora ele lida com a nova Pessoa 1 (L*a*b*)
 
 import sys
 import numpy as np
 import os
+import cv2 # Importa OpenCV para o carregamento manual da P6
 from tqdm import tqdm 
 
 # Adiciona o diretório atual ao path para garantir que os imports funcionem
@@ -26,75 +21,81 @@ if script_dir not in sys.path:
 # ==========================================================
 tqdm.write("Carregando módulos...")
 try:
-    # Pessoa 1
+    # Pessoa 1 (Nova versão L*a*b*)
     from preprocs import preprocessar_imagem
 except ImportError:
     tqdm.write("ERRO: Não foi possível encontrar o arquivo 'preprocs.py'.")
-    tqdm.write("Verifique se o arquivo da Pessoa 1 está salvo como 'preprocs.py' na mesma pasta.")
     sys.exit(1)
-
 try:
     # Pessoa 2
     from construir_grafo import criar_grafo_adjacencia
 except ImportError:
     tqdm.write("ERRO: Não foi possível encontrar o arquivo 'construir_grafo.py'.")
-    tqdm.write("Verifique se o seu arquivo (Pessoa 2) está salvo como 'construir_grafo.py' na mesma pasta.")
     sys.exit(1)
-
 try:
     # Pessoa 3
     from pesos_grafo import calcular_pesos_arestas
 except ImportError:
     tqdm.write("ERRO: Não foi possível encontrar o arquivo 'pesos_grafo.py'.")
-    tqdm.write("Verifique se você criou este arquivo na mesma pasta.")
     sys.exit(1)
-
 try:
     # Pessoa 4
     from mst_algoritmo import kruskal_mst
 except ImportError:
     tqdm.write("ERRO: Não foi possível encontrar o arquivo 'mst_algoritmo.py'.")
-    tqdm.write("Verifique se o arquivo da Pessoa 4 está na mesma pasta.")
     sys.exit(1)
-
 try:
     # Pessoa 5
     from segmentacao import segmentar_mst
 except ImportError:
     tqdm.write("ERRO: Não foi possível encontrar o arquivo 'segmentacao.py'.")
-    tqdm.write("Verifique se o arquivo da Pessoa 5 está na mesma pasta.")
     sys.exit(1)
-    
 try:
-    # Pessoa 6
+    # Pessoa 6 (Não mudou)
     from visualizacao import visualizar_segmentacao_lab
 except ImportError:
     tqdm.write("ERRO: Não foi possível encontrar o arquivo 'visualizacao.py'.")
-    tqdm.write("Verifique se o arquivo da Pessoa 6 está na mesma pasta.")
     sys.exit(1)
 
 # --- INÍCIO DO TESTE ---
 
-# Defina o nome da imagem a ser testada
-NOME_ARQUIVO_TESTE = "minitotoro.jpeg" # Você pode trocar para "balls.png" ou outra
-LIMIAR_K = 0.015 # Valor experimental para segmentação (Pessoa 5)
+NOME_ARQUIVO_TESTE = "totoro_rebaixado.jpg" 
+LIMIAR_K = 0.02 
 
 print(f"--- INICIANDO TESTE DE INTEGRAÇÃO (PIPELINE COMPLETO 1-6) ---")
 tqdm.write(f"Imagem: {NOME_ARQUIVO_TESTE} | Limiar K: {LIMIAR_K}")
+tqdm.write("Usando pipeline L*a*b* para cálculo de pesos (P1 -> P3)")
 
 # ==========================================================
 # ETAPA 1: Pré-processamento (Pessoa 1)
 # ==========================================================
 
-tqdm.write(f"\n[Pessoa 1] Processando a imagem: '{NOME_ARQUIVO_TESTE}'...")
-matriz_processada = preprocessar_imagem(NOME_ARQUIVO_TESTE)
+tqdm.write(f"\n[Pessoa 1] Processando a imagem (L*a*b*): '{NOME_ARQUIVO_TESTE}'...")
+# Esta é a matriz L*a*b* normalizada e com blur
+matriz_processada_lab = preprocessar_imagem(NOME_ARQUIVO_TESTE)
 
-if matriz_processada is None:
+if matriz_processada_lab is None:
     tqdm.write(f"ERRO FATAL: Falha ao carregar '{NOME_ARQUIVO_TESTE}'.")
-    tqdm.write("Verifique se o nome do arquivo está correto e se ele existe na pasta.")
     sys.exit(1)
 
-tqdm.write("[Pessoa 1] Imagem processada com sucesso.")
+tqdm.write("[Pessoa 1] Matriz L*a*b* processada (para P3) criada com sucesso.")
+
+# ==========================================================
+# ETAPA 1b: Preparação da Imagem para Pessoa 6
+# ==========================================================
+# A Pessoa 6 precisa da imagem RGB ORIGINAL para exibir
+# e para seu próprio cálculo de média.
+tqdm.write(f"\n[Teste] Carregando imagem RGB original (para P6)...")
+img_bgr_p6 = cv2.imread(NOME_ARQUIVO_TESTE)
+if img_bgr_p6 is None:
+    tqdm.write(f"ERRO FATAL: Falha ao carregar '{NOME_ARQUIVO_TESTE}' pela segunda vez.")
+    sys.exit(1)
+
+# Converter de BGR (OpenCV) para RGB (Matplotlib)
+img_rgb_p6 = cv2.cvtColor(img_bgr_p6, cv2.COLOR_BGR2RGB)
+# Normalizar para [0, 1] (como a P6 espera)
+matriz_rgb_normalizada = img_rgb_p6.astype(np.float32) / 255.0
+tqdm.write("[Teste] Matriz RGB original (para P6) criada com sucesso.")
 
 
 # ==========================================================
@@ -102,7 +103,8 @@ tqdm.write("[Pessoa 1] Imagem processada com sucesso.")
 # ==========================================================
 tqdm.write("\n[Transição] Extraindo dimensões da matriz...")
 
-altura, largura, _ = matriz_processada.shape
+# Usamos as dimensões da matriz processada (tanto faz, são iguais)
+altura, largura, _ = matriz_processada_lab.shape
 total_pixels = altura * largura
 dimensoes = (altura, largura)
 
@@ -118,9 +120,10 @@ tqdm.write("[Pessoa 2] Grafo estrutural criado com sucesso.")
 # ETAPA 3: Cálculo de Pesos (Pessoa 3)
 # ==========================================================
 
-tqdm.write(f"\n[Pessoa 3] Calculando pesos (dist. Euclidiana) para {len(lista_arestas)} arestas...")
+tqdm.write(f"\n[Pessoa 3] Calculando pesos (Dist. L*a*b*) para {len(lista_arestas)} arestas...")
 barra_pesos = tqdm(total=len(lista_arestas), desc="Calculando Pesos", unit=" arestas", leave=True, file=sys.stdout, ncols=80)
-lista_arestas_com_pesos = calcular_pesos_arestas(matriz_processada, lista_arestas, barra_pesos)
+# Passamos a matriz L*a*b* processada para P3
+lista_arestas_com_pesos = calcular_pesos_arestas(matriz_processada_lab, lista_arestas, barra_pesos)
 barra_pesos.close()
 tqdm.write("[Pessoa 3] Cálculo de pesos concluído.")
 
@@ -143,15 +146,9 @@ tqdm.write("\n[Pessoa 5] Executando a segmentação baseada na MST...")
 tqdm.write(f"Usando Limiar (k): {LIMIAR_K}")
 tqdm.write(f"Total de arestas na MST para processar: {len(mst)}")
 
-# Chama a sua função do arquivo 'segmentacao.py'
-# Entradas: mst (P4), limiar (definido acima), total_pixels (P2), dimensoes (P2)
 rotulos_map = segmentar_mst(mst, LIMIAR_K, total_pixels, dimensoes)
-
-# Saída: rotulos_map (para Pessoa 6)
 num_segmentos_final = np.unique(rotulos_map).size
-
-tqdm.write(f"[Pessoa 5] Segmentação concluída.")
-tqdm.write(f"[Pessoa 5] Mapa de rótulos (rotulos_map) criado com shape: {rotulos_map.shape}")
+tqdm.write(f"[Pessoa 5] Segmentação concluída. {num_segmentos_final} segmentos encontrados.")
 
 
 # ==========================================================
@@ -159,71 +156,24 @@ tqdm.write(f"[Pessoa 5] Mapa de rótulos (rotulos_map) criado com shape: {rotulo
 # ==========================================================
 tqdm.write("\n[Pessoa 6] Iniciando a etapa de visualização final (média L*a*b*)...")
 
-# Define um nome de arquivo de saída dinâmico
 nome_base = os.path.splitext(NOME_ARQUIVO_TESTE)[0]
-ARQUIVO_SAIDA = f"resultado_{nome_base}_k{LIMIAR_K}.png"
+ARQUIVO_SAIDA = f"resultado_{nome_base}_k{LIMIAR_K}_lab.png"
 
-# Chama a função da Pessoa 6
-# Entradas: matriz_processada (P1), rotulos_map (P5)
 try:
-    visualizar_segmentacao_lab(matriz_processada, 
+    # CHAMADA DA PESSOA 6
+    # Passamos a matriz RGB ORIGINAL (matriz_rgb_normalizada)
+    # e o mapa de rótulos (rotulos_map)
+    visualizar_segmentacao_lab(matriz_rgb_normalizada, 
                                rotulos_map, 
                                salvar_arquivo=ARQUIVO_SAIDA)
-except NameError as e:
-     if 'visualizar_segmentacao_lab' in str(e):
-          tqdm.write("ERRO FATAL: Função 'visualizar_segmentacao_lab' não encontrada.")
-          tqdm.write("Verifique se o nome da função em 'visualizacao.py' está correto.")
-     else:
-          raise e
 except Exception as e:
      tqdm.write(f"\nERRO INESPERADO durante a Etapa 6 (Visualização): {e}")
      tqdm.write("Verifique se as bibliotecas (matplotlib, scikit-image, scipy) estão instaladas.")
      sys.exit(1)
      
-# A função da Pessoa 6 (visualizar_segmentacao_lab) já imprime
-# seus próprios status e chama plt.show()
-
-
 # ==========================================================
 tqdm.write(f"\n--- TESTE DE INTEGRAÇÃO (1-6) FINALIZADO ---")
 # ==========================================================
 
-
-# ==========================================================
-# ETAPA 7: Resultados Finais (Impressão no Console)
-# ==========================================================
-tqdm.write("\n--- RESUMO DO TESTE ---")
-
-tqdm.write(f"\n--- Etapas 1-4 (Criação da MST) ---")
-tqdm.write(f"Imagem de Entrada: {NOME_ARQUIVO_TESTE}")
-tqdm.write(f"Total de Nós (Pixels): {total_pixels}")
-tqdm.write(f"Total de Arestas (Conexões): {len(lista_arestas)}")
-
-if total_pixels > 0:
-    ratio = len(lista_arestas) / total_pixels
-    tqdm.write(f"Taxa (Arestas / Nós): {ratio:.4f}")
-    tqdm.write(f"Tamanho da MST: {len(mst)} arestas (Nós - 1 = {total_pixels - 1})")
-    
-    peso_total_mst = sum([peso for peso, _, _ in mst])
-    tqdm.write(f"Peso total da MST: {peso_total_mst:.6f}")
-
-tqdm.write(f"\n--- Etapa 5 (Segmentação) ---")
-tqdm.write(f"Limiar (k) utilizado: {LIMIAR_K}")
-tqdm.write(f"Shape do Mapa de Rótulos: {rotulos_map.shape}")
-tqdm.write(f"Total de Segmentos Finais: {num_segmentos_final}")
-
-# Imprime um pedaço da matriz de rótulos
-tqdm.write("\n--- Amostra do Mapa de Rótulos (Pessoa 5) ---")
-tqdm.write("Exibindo o canto superior esquerdo (até 15x15 pixels):")
-max_linhas_amostra = min(altura, 15)
-max_colunas_amostra = min(largura, 15)
-amostra_rotulos = rotulos_map[0:max_linhas_amostra, 0:max_colunas_amostra]
-np.set_printoptions(threshold=np.inf, linewidth=np.inf)
-print(amostra_rotulos)
-np.set_printoptions(threshold=1000, linewidth=75)
-
-tqdm.write(f"\n--- Etapa 6 (Visualização) ---")
-tqdm.write(f"Visualização exibida (Matplotlib).")
-tqdm.write(f"Resultado salvo em: {ARQUIVO_SAIDA}")
-
+# (O restante do código de resumo não precisa ser colado, é o mesmo)
 tqdm.write("\n[Processo Concluído]")
