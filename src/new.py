@@ -16,28 +16,28 @@ print(segments_fz.shape)
 print(np.unique(segments_fz))
 print(np.where(segments_fz==0))
 
-segments_slic = slic(img, n_segments=250, compactness=10, sigma=1, start_label=1)
-segments_quick = quickshift(img, kernel_size=3, max_dist=6, ratio=0.5)
+#segments_slic = slic(img, n_segments=250, compactness=10, sigma=1, start_label=1)
+#segments_quick = quickshift(img, kernel_size=3, max_dist=6, ratio=0.5)
 gradient = sobel(rgb2gray(img))
-segments_watershed = watershed(gradient, markers=250, compactness=0.001)
+#segments_watershed = watershed(gradient, markers=250, compactness=0.001)
 
 
 print(f'Felzenszwalb number of segments: {len(np.unique(segments_fz))}')
 
-print(f'SLIC number of segments: {len(np.unique(segments_slic))}')
-print(f'Quickshift number of segments: {len(np.unique(segments_quick))}')
-print(f'Watershed number of segments: {len(np.unique(segments_watershed))}')
+#print(f'SLIC number of segments: {len(np.unique(segments_slic))}')
+#print(f'Quickshift number of segments: {len(np.unique(segments_quick))}')
+#print(f'Watershed number of segments: {len(np.unique(segments_watershed))}')
 
 fig, ax = plt.subplots(2, 2, figsize=(10, 10), sharex=True, sharey=True)
 
 ax[0, 0].imshow(mark_boundaries(img, segments_fz))
 ax[0, 0].set_title("Felzenszwalbs's method")
-ax[0, 1].imshow(mark_boundaries(img, segments_slic))
-ax[0, 1].set_title('SLIC')
-ax[1, 0].imshow(mark_boundaries(img, segments_quick))
-ax[1, 0].set_title('Quickshift')
-ax[1, 1].imshow(mark_boundaries(img, segments_watershed))
-ax[1, 1].set_title('Compact watershed')
+#ax[0, 1].imshow(mark_boundaries(img, segments_slic))
+#ax[0, 1].set_title('SLIC')
+#ax[1, 0].imshow(mark_boundaries(img, segments_quick))
+#ax[1, 0].set_title('Quickshift')
+#ax[1, 1].imshow(mark_boundaries(img, segments_watershed))
+#ax[1, 1].set_title('Compact watershed')
 
 for a in ax.ravel():
     a.set_axis_off()
