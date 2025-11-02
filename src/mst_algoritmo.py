@@ -1,26 +1,22 @@
-# -------------------------------------------------------------------------
-# Pessoa 4 — Algoritmo de Kruskal (Árvore Geradora Mínima - MST)
-# -------------------------------------------------------------------------
-# Objetivo: Dado o grafo ponderado (arestas_ponderadas),
-# encontrar a MST que conecta todos os pixels com o menor custo total.
-# -------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+#| Aqui se recebe ao grafo ponderado.                                           |
+#| Após isso, aplica-se o algoritmo de Kurskal para encontrar a AGM que conecta |
+#| todos os pixels com o menor custo total.                                     |
+# ------------------------------------------------------------------------------
 
 class UnionFind:
-    """Estrutura Union-Find (Set Union Disjunta) para controle de componentes."""
+    
     def __init__(self, n):
-        # Cada nó começa como seu próprio pai (conjunto individual)
         self.parent = list(range(n))
-        # O rank é usado para otimizar as uniões
         self.rank = [0] * n
 
     def find(self, x):
-        """Encontra o representante (raiz) do conjunto de x com compressão de caminho."""
         if self.parent[x] != x:
-            self.parent[x] = self.find(self.parent[x])  # compressão de caminho
+            self.parent[x] = self.find(self.parent[x]) 
         return self.parent[x]
 
     def union(self, x, y):
-        """Une os conjuntos de x e y. Retorna True se a união ocorreu."""
         raiz_x = self.find(x)
         raiz_y = self.find(y)
 
@@ -43,10 +39,7 @@ def kruskal_mst(arestas_ponderadas, num_nos, barra_progresso=None):
     # Ordena as arestas pelo peso
     arestas_ordenadas = sorted(arestas_ponderadas, key=lambda x: x[0])
 
-    #Inicializa a estrutura Union-Find
     uf = UnionFind(num_nos)
-
-    #Lista para armazenar a MST
     mst = []
 
     #Percorrer as arestas em ordem crescente de peso
