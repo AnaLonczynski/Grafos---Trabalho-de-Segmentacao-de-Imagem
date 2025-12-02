@@ -1,4 +1,3 @@
-#nome: matheusEduardoCamposSoares - 837435
 
 """
 base_dados.py
@@ -185,7 +184,7 @@ def plot_histograma_pesos(pesos_arestas: List[Tuple[int,int,float]], numero_bins
         plt.show()
     else:
         plt.close()
-
+        
 def desenhar_overlay_grafo(img_rgb_normalizada: np.ndarray, lista_arestas: List[Tuple[int,int,float]], max_arestas: int = 1000):
     """
     Desenha uma amostra das arestas sobre a imagem. Só usar com imagens pequenas/reduzidas.
@@ -250,12 +249,10 @@ def pipeline_unificado(caminho_imagem: str,
 # -----------------------
 if __name__ == "__main__":
     # Caminho da imagem que será processada
-    caminho_imagem = "../jiji.jpg"  
-    # Mudar para o caminho da sua imagem, por exemplo:
-    # "minhas_fotos/foto1.jpg"
+    caminho_imagem = "/home/ana/Grafos---Trabalho-de-Segmentacao-de-Imagem/jiji.jpg"  
 
     # Prefixo dos arquivos de saída (vai gerar .npz e .csv)
-    caminho_saida = "dados/resultado_teste"
+    caminho_saida = "/home/ana/Grafos---Trabalho-de-Segmentacao-de-Imagem/src/dados"
     # Mudar o nome se quiser separar os resultados
 
     # Tamanho máximo permitido para o lado maior da imagem
@@ -263,7 +260,7 @@ if __name__ == "__main__":
     # Aumentar para 300–400 deixa mais detalhes, mas pesa mais na memória
 
     # Tipo de vizinhança: "4" ou "8"
-    vizinhanca_pixels = "4"
+    vizinhanca_pixels = "8"
     # Trocar para "8" aumenta a quantidade de ligações no grafo
 
     # Gerar (True) ou não gerar (False) as imagens de visualização
