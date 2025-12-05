@@ -54,29 +54,38 @@ def carregar_imagem_rgb_normalizada(caminho_imagem: str, max_lado: int = None) -
     return img_float
 
 # -----------------------
-# Construção do grafo DIRECIONADO
+# Construção do grafo DIRECIONADO (com a restrição de arestas)
 # -----------------------
 def gerar_arestas_direcionadas(altura: int, largura: int, vizinhanca: str = "4") -> List[Tuple[int,int]]:
     """
-    Gera lista de arestas direcionadas (u,v) sem pesos.
-    vizinhanca: "4" ou "8".
-    Nota: cada par de vizinhos será representado em ambos os sentidos porque a função varre todos os pixels.
+    Gera lista de arestas direcionadas (u,v) **acíclicas**.
+    As direções permitidas são: Baixo, Direita e Diagonal Direita Baixo.
+    
+    vizinhanca: "4" (Baixo e Direita) ou "8" (Baixo, Direita, Diagonais).
     """
     arestas: List[Tuple[int,int]] = []
-    # offsets para vizinhança 4
-    offsets_4 = [(0,1),(1,0),(0,-1),(-1,0)]
-    # offsets adicionais para vizinhança 8 (diagonais)
-    offsets_8 = offsets_4 + [(-1,-1),(-1,1),(1,-1),(1,1)]
-    offsets = offsets_4 if vizinhanca == "4" else offsets_8  # mudar de "4" para "8" para aumentar quantidade de ligações
+    
+    if vizinhanca == "4":
+        # Baixo (1, 0) e Direita (0, 1)
+        offsets_permitidos = [(1, 0), (0, 1)]
+    elif vizinhanca == "8":
+        # Baixo (1, 0), Direita (0, 1) e Diagonal Direita Baixo (1, 1)
+        offsets_permitidos = [(1, 0), (0, 1), (1, 1)] 
+    else:
+         raise ValueError("Vizinhanca deve ser '4' (Baixo/Direita) ou '8' (Baixo/Direita/Diag. Baixo Direita)")
 
     for linha in range(altura):
         for coluna in range(largura):
             u = coord_para_id(linha, coluna, largura)
-            for dr, dc in offsets:
+            
+            # Conecta de u para os vizinhos permitidos
+            for dr, dc in offsets_permitidos:
                 nl, nc = linha + dr, coluna + dc
+                
                 if 0 <= nl < altura and 0 <= nc < largura:
                     v = coord_para_id(nl, nc, largura)
                     arestas.append((u, v))
+                    
     return arestas
 
 # -----------------------

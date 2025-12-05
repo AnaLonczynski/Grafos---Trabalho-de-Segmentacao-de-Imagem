@@ -29,7 +29,7 @@ def main():
     # IMPORTANTE: Para testes rápidos e para conseguir VISUALIZAR ciclos no terminal,
     # use um tamanho pequeno (ex: 50 ou 100 pixels de lado).
     max_lado = 50 
-    vizinhanca = "4"
+    vizinhanca = "8"
     
     print("=========================================")
     print(" INICIANDO INTEGRAÇÃO PESSOA 1 + PESSOA 2")
