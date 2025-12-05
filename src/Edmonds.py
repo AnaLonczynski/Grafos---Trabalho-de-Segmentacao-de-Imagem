@@ -1,97 +1,185 @@
 """
-Algoritmo de Edmond e Chiliu Chuliu Chiuliu
-Descrição: Implementa a fase inicial do algoritmo de Chu-Liu / Edmonds.
-           1. Seleção Gulosa (Greedy) dos pais de menor custo.
-           2. Detecção de Ciclos na seleção feita.
-
-           RAYSSA E BRUNO, PODEM CONTINUAR NESSE AQUI MSM AAAA
+Algoritmo de Edmond e Chu-Liu
+Descrição: Implementação completa (Seleção, Detecção, Contração e Expansão).
 """
 
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict, Optional, Set
 
 class EdmondsCore:
     def __init__(self, num_nos: int, raiz: int = 0):
         self.num_nos = num_nos
         self.raiz = raiz
-        # arestas_entrada[v] = lista de tuplas (u, peso)
-        # Significa que existe uma aresta u -> v com custo peso
-        self.arestas_entrada: List[List[Tuple[int, float]]] = [[] for _ in range(num_nos)]
+        self.arestas_entrada: Dict[int, List[tuple]] = {i: [] for i in range(num_nos)}
 
     def construir_grafo_entrada(self, lista_arestas_com_peso: List[Tuple[int, int, float]]):
-        """
-        Recebe a lista bruta da Pessoa 1 (u, v, w) e converte para
-        lista de adjacência invertida para acesso rápido.
-        """
-        print(f"[ChiuLiu] Organizando grafo com {len(lista_arestas_com_peso)} arestas...")
+        self.arestas_entrada = {i: [] for i in range(self.num_nos)}
         for u, v, w in lista_arestas_com_peso:
-            self.arestas_entrada[v].append((u, w))
+            self.arestas_entrada[v].append((u, w, u, v))
 
-    def selecionar_pais_minimos(self) -> Dict[int, Tuple[int, float]]:
+    def _selecionar_pais_minimos(self, vertices_ativos: List[int]) -> Dict[int, Tuple[int, float, int, int]]:
         """
-        Passo 1: Para cada nó (exceto raiz), escolhe a aresta de entrada mais barata.
-        Retorna: Dicionário {filho: (pai, peso)}
+        Passo 1: Guloso. Escolhe o pai mais barato para cada nó ativo.
         """
         pais_escolhidos = {}
-        
-        # Itera sobre todos os nós do grafo
-        for v in range(self.num_nos):
+        for v in vertices_ativos:
             if v == self.raiz:
                 continue
             
-            entradas = self.arestas_entrada[v]
+            entradas = self.arestas_entrada.get(v, [])
             if not entradas:
-                continue # Nó isolado (não deveria acontecer na segmentação de img padrão)
+                continue 
             
-            # Acha a tupla com o menor peso 'w'
-            # x[1] é o peso na tupla (u, w)
-            melhor_pai, menor_peso = min(entradas, key=lambda x: x[1])
-            
-            pais_escolhidos[v] = (melhor_pai, menor_peso)
+            # Pega a aresta de menor peso
+            melhor_aresta = min(entradas, key=lambda x: x[1])
+            # melhor_aresta = (u, w, orig_u, orig_v)
+            pais_escolhidos[v] = melhor_aresta
             
         return pais_escolhidos
 
-    def detectar_primeiro_ciclo(self, pais: Dict[int, Tuple[int, float]]) -> Optional[List[int]]:
+    def _detectar_ciclo(self, pais: Dict[int, tuple], vertices_ativos: List[int]) -> Optional[List[int]]:
         """
-        Passo 2: Verifica se a escolha gulosa criou loops.
-        Retorna: Lista de IDs dos nós que compõem o ciclo (se houver), ou None.
+        Passo 2: Detecta se há ciclos na seleção gulosa.
         """
-        visitados_geral = [False] * self.num_nos
-        
-        print("[ChiuLiu] Buscando ciclos na seleção...")
+        visitados = {v: False for v in vertices_ativos}
+        path_stack = []
+        path_set = set()
 
-        for i in range(self.num_nos):
-            if visitados_geral[i]:
+        for i in vertices_ativos:
+            if visitados[i]:
                 continue
             
-            # Rastreamento do caminho atual para achar back-edges
-            caminho_atual = []
-            conjunto_caminho = set() # Para busca O(1)
-            
             curr = i
+            path_stack = []
+            path_set = set()
             
-            # Navega "para cima" seguindo os pais
             while curr is not None:
-                if curr in conjunto_caminho:
-                    # ACHAMOS UM CICLO!
-                    # O ciclo começa na primeira ocorrência de 'curr' no caminho_atual até o fim
-                    indice_inicio = caminho_atual.index(curr)
-                    ciclo = caminho_atual[indice_inicio:]
-                    return ciclo
+                if curr in path_set:
+                    # Ciclo encontrado!
+                    indice_inicio = path_stack.index(curr)
+                    return path_stack[indice_inicio:]
                 
-                if visitados_geral[curr]:
-                    # Encontramos um nó já processado anteriormente que não formou ciclo
-                    # ou leva à raiz. Podemos parar este ramo.
+                if curr in visitados and visitados[curr]:
                     break
                 
-                # Marcação
-                visitados_geral[curr] = True
-                caminho_atual.append(curr)
-                conjunto_caminho.add(curr)
+                visitados[curr] = True
+                path_stack.append(curr)
+                path_set.add(curr)
                 
-                # Sobe para o pai
+                # Avança para o pai (se existir)
                 if curr in pais:
-                    curr = pais[curr][0] # Pega o ID do pai
+                    curr = pais[curr][0] # O pai é o primeiro elemento da tupla
                 else:
-                    curr = None # Chegou na raiz ou nó sem pai
-                    
+                    curr = None
+        
         return None
+
+    def resolver_arborescencia(self, vertices_ativos: Optional[List[int]] = None) -> Dict[int, Tuple[int, float]]:
+        """
+        Lógica Recursiva Principal (A 'Mágica').
+        """
+        if vertices_ativos is None:
+            vertices_ativos = list(range(self.num_nos))
+
+        # 1. Seleção Gulosa
+        pais = self._selecionar_pais_minimos(vertices_ativos)
+
+        # 2. Verifica Ciclo
+        ciclo = self._detectar_ciclo(pais, vertices_ativos)
+
+        # CASO BASE: Se não tem ciclo, achamos a solução ótima para este nível
+        if not ciclo:
+            # Retorna formato simplificado {filho: (pai, peso)}
+            return {k: (v[0], v[1]) for k, v in pais.items()}
+
+        # CASO RECURSIVO: Tem ciclo. Precisamos contrair.
+        print(f"   -> Ciclo detectado com {len(ciclo)} nós. Contraindo...")
+
+        # ---------------------------------------------------------
+        # FASE 3: CONTRAÇÃO (Criar Super-Nó)
+        # ---------------------------------------------------------
+        
+        id_super_no = max(vertices_ativos) + 1
+        nodes_ciclo_set = set(ciclo)
+        
+        # Novos vértices ativos = (Ativos - Ciclo) + {SuperNó}
+        novos_vertices_ativos = [v for v in vertices_ativos if v not in nodes_ciclo_set]
+        novos_vertices_ativos.append(id_super_no)
+
+        novas_arestas = {v: [] for v in novos_vertices_ativos}
+        
+        referencia_arestas = {} 
+
+        # Arestas que compõem o ciclo (para calcular o custo de redução)
+        peso_no_ciclo = {} # Peso da aresta que aponta PARA v dentro do ciclo
+        for v in ciclo:
+            pai_v, peso_v, _, _ = pais[v]
+            peso_no_ciclo[v] = peso_v
+
+        # Reconstruir arestas para o grafo contraído
+        for v in vertices_ativos:
+            lista_entrada = self.arestas_entrada.get(v, [])
+            for u, w, orig_u, orig_v in lista_entrada:
+                if u not in vertices_ativos: continue # Ignora nós mortos
+
+                u_novo = id_super_no if u in nodes_ciclo_set else u
+                v_novo = id_super_no if v in nodes_ciclo_set else v
+
+                if u_novo != v_novo:
+                    novo_peso = w
+                    if v_novo == id_super_no:
+                        novo_peso = w - peso_no_ciclo[v]
+                    novas_arestas[v_novo].append((u_novo, novo_peso, orig_u, orig_v))
+
+        backup_arestas = self.arestas_entrada
+        self.arestas_entrada = novas_arestas
+        
+        # ---------------------------------------------------------
+        # CHAMADA RECURSIVA
+        # ---------------------------------------------------------
+        arborescencia_contraida = self.resolver_arborescencia(novos_vertices_ativos)
+        
+        # Restaura arestas originais (Backtracking)
+        self.arestas_entrada = backup_arestas
+
+        # ---------------------------------------------------------
+        # FASE 4: EXPANSÃO (Descompactar Super-Nó)
+        # ---------------------------------------------------------
+        solucao_final = {}
+        
+        # Nó de entrada no ciclo (quem quebrou o ciclo)
+        no_entrada_ciclo = None
+        aresta_quebra_ciclo = None
+
+        for filho_novo, (pai_novo, _) in arborescencia_contraida.items():
+            if filho_novo == id_super_no:
+                candidatos = []
+                for v_ciclo in ciclo:
+                    for u, w, ou, ov in self.arestas_entrada[v_ciclo]:
+                        u_map = id_super_no if u in nodes_ciclo_set else u
+                        if u_map == pai_novo:
+                            peso_ajustado = w - peso_no_ciclo[v_ciclo]
+                            candidatos.append( (peso_ajustado, u, v_ciclo, w) )
+                
+                _, pai_real, filho_real, peso_real = min(candidatos, key=lambda x: x[0])
+                
+                solucao_final[filho_real] = (pai_real, peso_real)
+                no_entrada_ciclo = filho_real
+            
+            elif pai_novo == id_super_no:
+                cand_saida = []
+                for u, w, ou, ov in self.arestas_entrada[filho_novo]:
+                    if u in nodes_ciclo_set:
+                        cand_saida.append((u, w))
+                
+                melhor_saida, p_saida = min(cand_saida, key=lambda x: x[1])
+                solucao_final[filho_novo] = (melhor_saida, p_saida)
+                
+            else:
+                solucao_final[filho_novo] = arborescencia_contraida[filho_novo]
+
+        for v in ciclo:
+            if v != no_entrada_ciclo:
+                pai_ciclo, peso_ciclo, _, _ = pais[v]
+                solucao_final[v] = (pai_ciclo, peso_ciclo)
+
+        return solucao_final

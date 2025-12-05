@@ -1,15 +1,12 @@
-
 """
 base_dados.py
 Unifica:
  - leitura e normalização de imagem
+ - pré-processamento (Superpixel/Blur) para redução de complexidade
  - construção de grafo DIRECIONADO (4 ou 8 vizinhos)
  - cálculo de pesos entre pixels (distância de cor)
  - salvamento em .npz e .csv
  - funções simples de inspeção/visualização
-
-Uso:
-  python base_dados.py --img imagens/exemplo.jpg --out dados/edges_saida --maxsize 300 --neigh 4
 """
 
 from typing import Tuple, List, Dict
@@ -43,6 +40,7 @@ def carregar_imagem_rgb_normalizada(caminho_imagem: str, max_lado: int = None) -
     if img_bgr is None:
         raise ValueError("Erro ao carregar imagem com cv2.imread")
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    
     if max_lado is not None:
         altura, largura = img_rgb.shape[:2]
         escala = min(1.0, max_lado / max(altura, largura))
@@ -50,8 +48,36 @@ def carregar_imagem_rgb_normalizada(caminho_imagem: str, max_lado: int = None) -
             nova_largura = int(largura * escala)
             nova_altura = int(altura * escala)
             img_rgb = cv2.resize(img_rgb, (nova_largura, nova_altura), interpolation=cv2.INTER_AREA)
+            
     img_float = img_rgb.astype(np.float32) / 255.0
     return img_float
+
+# -----------------------
+# Pré-Processamento (Superpixel / Blur)
+# -----------------------
+def aplicar_superpixel_blur(img: np.ndarray, k_blur: int = 3) -> np.ndarray:
+    """
+    Aplica suavização e redução de dimensionalidade (Downsampling).
+    Isso reduz drasticamente o número de nós e ciclos triviais, permitindo
+    que o Edmonds rode em imagens maiores.
+    """
+    # 1. Gaussian Blur para remover ruído de alta frequência
+    # Garante que k_blur seja impar
+    if k_blur % 2 == 0: k_blur += 1
+    img_blurred = cv2.GaussianBlur(img, (k_blur, k_blur), 0)
+    
+    # 2. Superpixel (Downsampling por fator de 2)
+    h, w = img_blurred.shape[:2]
+    new_w, new_h = w // 2, h // 2
+    
+    # Evita reduzir se a imagem já for muito pequena
+    if new_w < 4 or new_h < 4:
+        return img_blurred
+        
+    # INTER_AREA é ideal para redução (média dos pixels)
+    img_superpixel = cv2.resize(img_blurred, (new_w, new_h), interpolation=cv2.INTER_AREA)
+    
+    return img_superpixel
 
 # -----------------------
 # Construção do grafo DIRECIONADO
@@ -60,14 +86,16 @@ def gerar_arestas_direcionadas(altura: int, largura: int, vizinhanca: str = "4")
     """
     Gera lista de arestas direcionadas (u,v) sem pesos.
     vizinhanca: "4" ou "8".
-    Nota: cada par de vizinhos será representado em ambos os sentidos porque a função varre todos os pixels.
+    Nota: Mantemos a vizinhança completa (gerando ciclos), pois o Superpixel
+    já reduziu o tamanho do problema.
     """
     arestas: List[Tuple[int,int]] = []
-    # offsets para vizinhança 4
-    offsets_4 = [(0,1),(1,0),(0,-1),(-1,0)]
+    # offsets para vizinhança 4 (Cima, Baixo, Esquerda, Direita)
+    offsets_4 = [(0,1), (1,0), (0,-1), (-1,0)]
     # offsets adicionais para vizinhança 8 (diagonais)
-    offsets_8 = offsets_4 + [(-1,-1),(-1,1),(1,-1),(1,1)]
-    offsets = offsets_4 if vizinhanca == "4" else offsets_8  # mudar de "4" para "8" para aumentar quantidade de ligações
+    offsets_8 = offsets_4 + [(-1,-1), (-1,1), (1,-1), (1,1)]
+    
+    offsets = offsets_4 if vizinhanca == "4" else offsets_8
 
     for linha in range(altura):
         for coluna in range(largura):
@@ -87,7 +115,6 @@ def calcular_pesos_por_cor(img_rgb_normalizada: np.ndarray, lista_arestas: List[
     Para cada aresta (u,v), calcula peso w = distância entre cor de u e v.
     Retorna lista de (u, v, w).
     """
-
     altura, largura = img_rgb_normalizada.shape[:2]
 
     def cor_por_id(idx: int) -> np.ndarray:
@@ -95,15 +122,23 @@ def calcular_pesos_por_cor(img_rgb_normalizada: np.ndarray, lista_arestas: List[
         return img_rgb_normalizada[l, c]  # vetor [R,G,B]
 
     pesos: List[Tuple[int,int,float]] = []
-    # usar tqdm para ver progresso em imagens maiores
+    
+    # Opcional: Limite de peso para reduzir densidade (heurística)
+    # Se quiser ativar, descomente as linhas abaixo e defina um limiar (ex: 0.2)
+    LIMIAR_CORTE = 1.0 # 1.0 significa que pega tudo (sem corte)
+    
     for (u, v) in tqdm(lista_arestas, desc="Calculando pesos"):
         cor_u = cor_por_id(u)
         cor_v = cor_por_id(v)
-        if metrica == "euclidiana" or metrica == "euclidiana_rgb":
+        
+        if metrica == "euclidiana":
             w = float(np.linalg.norm(cor_u - cor_v))
         else:
-            raise NotImplementedError("Apenas 'euclidiana' implementado")
-        pesos.append((u, v, w))
+            w = float(np.linalg.norm(cor_u - cor_v)) # Fallback padrão
+            
+        if w <= LIMIAR_CORTE:
+            pesos.append((u, v, w))
+            
     return pesos
 
 # -----------------------
@@ -118,14 +153,11 @@ def salvar_arestas_npz(caminho_saida: str, altura: int, largura: int, pesos_ares
     w_arr = np.array([t[2] for t in pesos_arestas], dtype=np.float32)
     meta = metadados.copy() if metadados else {}
     meta.update({"altura": altura, "largura": largura})
-    # meta salvo como objeto para manter dicionário
+    
     np.savez_compressed(caminho_saida + ".npz", u=u_arr, v=v_arr, w=w_arr, meta=np.array([meta], dtype=object))
     print(f"Salvo {len(u_arr)} arestas em {caminho_saida}.npz")
 
 def carregar_arestas_npz(caminho_npz: str) -> Tuple[int,int,List[Tuple[int,int,float]],Dict]:
-    """
-    Carrega arquivo .npz gerado por salvar_arestas_npz e retorna (altura, largura, lista_de_(u,v,w), meta)
-    """
     d = np.load(caminho_npz, allow_pickle=True)
     u_arr = d["u"].astype(np.int32)
     v_arr = d["v"].astype(np.int32)
@@ -137,9 +169,6 @@ def carregar_arestas_npz(caminho_npz: str) -> Tuple[int,int,List[Tuple[int,int,f
     return altura, largura, lista_pesos, meta
 
 def salvar_arestas_csv(caminho_csv: str, pesos_arestas: List[Tuple[int,int,float]]):
-    """
-    Salva arestas em CSV com cabeçalho u,v,w — útil para inspeção humana (Excel/Sheets).
-    """
     with open(caminho_csv, mode="w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["u","v","w"])
@@ -151,23 +180,15 @@ def salvar_arestas_csv(caminho_csv: str, pesos_arestas: List[Tuple[int,int,float
 # Inspeção rápida / Visualizações
 # -----------------------
 def estatisticas_rapidas(altura: int, largura: int, pesos_arestas: List[Tuple[int,int,float]]):
-    """
-    Imprime informações básicas para verificação.
-    """
     n_nos = altura * largura
     n_arestas = len(pesos_arestas)
     print("=== ESTATÍSTICAS RÁPIDAS ===")
     print(f"Pixels (nós): {n_nos}")
     print(f"Arestas direcionadas: {n_arestas}")
     print(f"Arestas por nó (média): {n_arestas / n_nos:.2f}")
-    print("Amostra de até 10 arestas (u, v, w):")
-    for t in pesos_arestas[:10]:
-        print(t)
-    # checagem de contagem com fórmula para 4/8
-    n_undirected_4 = altura * (largura - 1) + (altura - 1) * largura
-    n_undirected_8 = n_undirected_4 + 2 * (altura - 1) * (largura - 1)
-    print(f"Estimativa (não-direcionado) 4-neigh: {n_undirected_4}, 8-neigh: {n_undirected_8}")
-    print(f"Estimativa (direcionado) 4-neigh: {2 * n_undirected_4}, 8-neigh: {2 * n_undirected_8}")
+    if n_arestas > 0:
+        print("Amostra de até 5 arestas:")
+        for t in pesos_arestas[:5]: print(t)
     print("============================")
 
 def plot_histograma_pesos(pesos_arestas: List[Tuple[int,int,float]], numero_bins: int = 50, salvar_caminho: str = None, exibir: bool = True):
@@ -186,28 +207,28 @@ def plot_histograma_pesos(pesos_arestas: List[Tuple[int,int,float]], numero_bins
         plt.close()
         
 def desenhar_overlay_grafo(img_rgb_normalizada: np.ndarray, lista_arestas: List[Tuple[int,int,float]], max_arestas: int = 1000):
-    """
-    Desenha uma amostra das arestas sobre a imagem. Só usar com imagens pequenas/reduzidas.
-    """
     try:
         import networkx as nx
     except Exception:
-        print("networkx não instalado — pip install networkx para overlay do grafo.")
+        print("networkx não instalado.")
         return
     altura, largura = img_rgb_normalizada.shape[:2]
     G = nx.DiGraph()
+    # Adiciona nós (pode ser lento para img grande, usar com cuidado)
     for linha in range(altura):
         for coluna in range(largura):
             idx = coord_para_id(linha, coluna, largura)
             G.add_node(idx, pos=(coluna, altura - 1 - linha))
+            
     amostra_arestas = [(u, v) for (u, v, _) in lista_arestas[:max_arestas]]
     for u, v in amostra_arestas:
         G.add_edge(u, v)
+        
     pos = nx.get_node_attributes(G, 'pos')
     plt.figure(figsize=(6,6))
     plt.imshow(img_rgb_normalizada)
-    nx.draw_networkx_nodes(G, pos, node_size=5)
-    nx.draw_networkx_edges(G, pos, arrowstyle='->', arrowsize=6, width=0.5)
+    nx.draw_networkx_nodes(G, pos, node_size=5, node_color='r')
+    nx.draw_networkx_edges(G, pos, arrowstyle='->', arrowsize=6, width=0.5, edge_color='y')
     plt.title("Overlay do grafo (amostra)")
     plt.axis('off')
     plt.show()
@@ -221,27 +242,52 @@ def pipeline_unificado(caminho_imagem: str,
                        vizinhanca: str = "4",
                        gerar_plots: bool = True) -> Tuple[np.ndarray, List[Tuple[int,int,float]]]:
     """
-    Executa pipeline completo: leitura -> gerar arestas direcionadas -> calcular pesos -> salvar .npz e .csv -> inspeção.
-    Retorna (imagem_normalizada, lista_de_(u,v,w)).
+    Executa pipeline: Leitura -> Superpixel/Blur -> Grafo -> Pesos -> Salvar.
     """
-    img = carregar_imagem_rgb_normalizada(caminho_imagem, max_lado)
+    # 1. Carrega imagem Original
+    img_orig = carregar_imagem_rgb_normalizada(caminho_imagem, max_lado)
+    h_orig, w_orig = img_orig.shape[:2]
+    
+    print(f"--- PROCESSAMENTO DE IMAGEM ---")
+    print(f"Original: {w_orig}x{h_orig} ({h_orig*w_orig} pixels)")
+    
+    # 2. APLICA SUPERPIXEL + BLUR (Reduz complexidade para Edmonds)
+    # k_blur=3 e redução pela metade
+    img = aplicar_superpixel_blur(img_orig, k_blur=3)
     altura, largura = img.shape[:2]
-    print(f"Imagem carregada {os.path.basename(caminho_imagem)} — {largura}x{altura}")
+    
+    n_nos_orig = h_orig * w_orig
+    n_nos_new = altura * largura
+    razao = n_nos_new / n_nos_orig if n_nos_orig > 0 else 0
+    
+    print(f"Após Superpixel: {largura}x{altura} ({n_nos_new} pixels)")
+    print(f"Redução de nós: {razao:.1%} do tamanho original.")
+    
+    # 3. Gera Grafo (Agora seguro para rodar completo)
+    # Usa vizinhanca passada por parametro (padrão '4')
     arestas = gerar_arestas_direcionadas(altura, largura, vizinhanca)
-    print(f"Arestas direcionadas geradas: {len(arestas)}")
+    print(f"Arestas geradas ({vizinhanca}-vizinhos): {len(arestas)}")
+    
+    # 4. Calcula Pesos
     pesos = calcular_pesos_por_cor(img, arestas)
 
-    # salvar .npz e .csv
-    metadados = {"origem": os.path.basename(caminho_imagem), "vizinhanca": vizinhanca}
+    # 5. Salvar
+    metadados = {
+        "origem": os.path.basename(caminho_imagem), 
+        "vizinhanca": vizinhanca,
+        "superpixel": True
+    }
     salvar_arestas_npz(caminho_saida_base, altura, largura, pesos, metadados)
     salvar_arestas_csv(caminho_saida_base + ".csv", pesos)
 
-    # inspeção
+    # 6. Inspeção
     estatisticas_rapidas(altura, largura, pesos)
     if gerar_plots:
         plot_histograma_pesos(pesos, numero_bins=50, salvar_caminho=caminho_saida_base + "_hist.png", exibir=True)
-        if max(altura, largura) <= 150:
+        # Só desenha overlay se a imagem reduzida for pequena
+        if max(altura, largura) <= 100:
             desenhar_overlay_grafo(img, pesos, max_arestas=500)
+            
     return img, pesos
 
 # -----------------------
@@ -253,15 +299,14 @@ if __name__ == "__main__":
 
     # Prefixo dos arquivos de saída (vai gerar .npz e .csv)
     caminho_saida = "/home/ana/Grafos---Trabalho-de-Segmentacao-de-Imagem/src/dados"
-    # Mudar o nome se quiser separar os resultados
 
-    # Tamanho máximo permitido para o lado maior da imagem
-    max_lado_imagem = None  
-    # Aumentar para 300–400 deixa mais detalhes, mas pesa mais na memória
+    # Tamanho máximo permitido para o lado maior da imagem ORIGINAL 
+    # (O Superpixel vai reduzir isso pela metade depois)
+    # Ex: Se colocar 200, a imagem processada será aprox 100x100
+    max_lado_imagem = 200  
 
     # Tipo de vizinhança: "4" ou "8"
-    vizinhanca_pixels = "8"
-    # Trocar para "8" aumenta a quantidade de ligações no grafo
+    vizinhanca_pixels = "4" # Comece com 4 para testar ciclos mais simples
 
     # Gerar (True) ou não gerar (False) as imagens de visualização
     gerar_plots = True  

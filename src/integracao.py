@@ -24,7 +24,7 @@ except ImportError:
 def main():
     # --- PARÂMETROS ---
     # Ajuste o caminho da imagem aqui para testar
-    caminho_imagem = "jiji.jpg" 
+    caminho_imagem = "totoro_rebaixado.jpg" 
     
     # IMPORTANTE: Para testes rápidos e para conseguir VISUALIZAR ciclos no terminal,
     # use um tamanho pequeno (ex: 50 ou 100 pixels de lado).
@@ -65,20 +65,14 @@ def main():
     print(f"   -> Total de arestas calculadas: {len(lista_pesos)}")
 
     # ---------------------------------------------------------
-    # 2. Executar Algoritmo Core A (Pessoa 2)
+    # 2. Executar Algoritmo Core - Parte 2  
     # ---------------------------------------------------------
-    print("\n>>> [2/3] Executando Pessoa 2 (ChiuLiu)...")
+    print("\n>>> [2/3] Executando Pessoa 2 e 3 (Edmonds Recursivo)...")
     
     edmonds = Edmonds.EdmondsCore(num_nos=num_nos, raiz=0)
-    
     edmonds.construir_grafo_entrada(lista_pesos)
     
-    # Fase de Seleção
-    pais = edmonds.selecionar_pais_minimos()
-    print(f"   -> Seleção gulosa concluída. {len(pais)} arestas escolhidas.")
-    
-    # Fase de Detecção de Ciclo
-    ciclo = edmonds.detectar_primeiro_ciclo(pais)
+    arborescencia_final = edmonds.resolver_arborescencia()
 
     # ---------------------------------------------------------
     # 3. Análise dos Resultados
@@ -86,24 +80,17 @@ def main():
     print("\n>>> [3/3] RELATÓRIO FINAL")
     print("-----------------------------------------")
     
-    if ciclo:
-        print(f"🔴 RESULTADO: Ciclo Detectado!")
-        print(f"   Tamanho do ciclo: {len(ciclo)} nós")
-        print(f"   Nós envolvidos (ID): {ciclo}")
+    if arborescencia_final:
+        print(f"🟢 SUCESSO: Arborescência Mínima construída!")
+        print(f"   Total de arestas na solução: {len(arborescencia_final)}")
         
-        # Converter IDs para coordenadas (Linha, Coluna) para ficar legível
-        coords_ciclo = [base_dados.id_para_coord(idx, w) for idx in ciclo]
-        print(f"   Coords (L, C): {coords_ciclo}")
+        custo_total = sum(item[1] for item in arborescencia_final.values())
+        print(f"   Custo total: {custo_total:.4f}")
         
-        print("\n   PRÓXIMO PASSO (Buno aqui):")
-        print("   -> Contrair esses nós em um Super-Nó.")
-        print("   -> Ajustar pesos das arestas que entram/saem desse grupo.")
-        print("   -> Chamar recursão.")
+        print("\n   PRÓXIMO PASSO (Visualização):")
+        print("   -> A Pessoa 4 deve pegar esse dicionário e desenhar a segmentação.")
     else:
-        print(f"🟢 RESULTADO: Nenhum ciclo encontrado!")
-        print("   A seleção gulosa formou uma Arborescência válida.")
-        print("\n   PRÓXIMO PASSO (Rayssa):")
-        print("   -> A solução é ótima. Basta desenhar a imagem segmentada.")
+        print("🔴 ERRO: Não foi possível gerar a arborescência (retorno vazio).")
 
     print("=========================================")
 
