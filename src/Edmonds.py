@@ -3,8 +3,6 @@ Algoritmo de Edmond e Chiliu Chuliu Chiuliu
 Descrição: Implementa a fase inicial do algoritmo de Chu-Liu / Edmonds.
            1. Seleção Gulosa (Greedy) dos pais de menor custo.
            2. Detecção de Ciclos na seleção feita.
-
-           RAYSSA E BRUNO, PODEM CONTINUAR NESSE AQUI MSM AAAA
 """
 
 from typing import List, Tuple, Dict, Optional
@@ -19,7 +17,7 @@ class EdmondsCore:
 
     def construir_grafo_entrada(self, lista_arestas_com_peso: List[Tuple[int, int, float]]):
         """
-        Recebe a lista bruta da Pessoa 1 (u, v, w) e converte para
+        Recebe a lista bruta (u, v, w) e converte para
         lista de adjacência invertida para acesso rápido.
         """
         print(f"[ChiuLiu] Organizando grafo com {len(lista_arestas_com_peso)} arestas...")
@@ -40,7 +38,7 @@ class EdmondsCore:
             
             entradas = self.arestas_entrada[v]
             if not entradas:
-                continue # Nó isolado (não deveria acontecer na segmentação de img padrão)
+                continue # Nó isolado
             
             # Acha a tupla com o menor peso 'w'
             # x[1] é o peso na tupla (u, w)

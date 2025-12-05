@@ -7,38 +7,48 @@ import sys
 import os
 import numpy as np
 
-# Importa o módulo da Pessoa 1
+# Imports dos modulos
 try:
     import base_dados
 except ImportError:
     print("ERRO: O arquivo 'base_dados.py' não foi encontrado neste diretório.")
     sys.exit(1)
 
-# Importa o módulo da Pessoa 2
 try:
     import Edmonds
 except ImportError:
     print("ERRO: O arquivo 'Edmonds' não foi encontrado.")
     sys.exit(1)
 
+try:
+    import segmentacao 
+except ImportError:
+    print("ERRO CRÍTICO: O arquivo 'segmentacao.py' não foi encontrado.")
+    sys.exit(1)
+
+try:
+    import visualizacao
+except ImportError:
+    print("ERRO CRÍTICO: O arquivo 'visualizacao.py' não foi encontrado.")
+    sys.exit(1)
+
+
+# Método Main
+
 def main():
-    # --- PARÂMETROS ---
-    # Ajuste o caminho da imagem aqui para testar
-    caminho_imagem = "jiji.jpg" 
-    
-    # IMPORTANTE: Para testes rápidos e para conseguir VISUALIZAR ciclos no terminal,
-    # use um tamanho pequeno (ex: 50 ou 100 pixels de lado).
-    max_lado = 50 
+
+    caminho_imagem = "totoro_rebaixado.jpg" 
+    max_lado = None  # Tem que ser ajustado a depender da imagem
     vizinhanca = "8"
     
     print("=========================================")
-    print(" INICIANDO INTEGRAÇÃO PESSOA 1 + PESSOA 2")
+    print(" INICIANDO INTEGRAÇÃO")
     print("=========================================")
 
     # ---------------------------------------------------------
-    # 1. Executar Engenharia de Dados (Pessoa 1)
+    # 1. Executar Engenharia de Dados 
     # ---------------------------------------------------------
-    print("\n>>> [1/3] Exectando Pessoa 1 (base_dados)...")
+    print("\n>>> [1/3] Executando base_dados...")
     
     # Verifica se a imagem existe, se não, cria uma dummy para o código não quebrar
     if not os.path.exists(caminho_imagem):
@@ -49,14 +59,13 @@ def main():
         cv2.imwrite("teste_temp.jpg", img_temp)
         caminho_imagem = "teste_temp.jpg"
 
-    # Chama a função pipeline do arquivo da Pessoa 1
-    # Nota: O pipeline_unificado já carrega, cria grafo e calcula pesos
+    # Cria grafo e calcula pesos
     img, lista_pesos = base_dados.pipeline_unificado(
         caminho_imagem=caminho_imagem,
         caminho_saida_base="dados_teste",
         max_lado=max_lado,
         vizinhanca=vizinhanca,
-        gerar_plots=False # Desliga plots da P1 para focar no terminal
+        gerar_plots=False
     )
     
     h, w, _ = img.shape
@@ -65,9 +74,9 @@ def main():
     print(f"   -> Total de arestas calculadas: {len(lista_pesos)}")
 
     # ---------------------------------------------------------
-    # 2. Executar Algoritmo Core A (Pessoa 2)
+    # 2. Executar Algoritmo Core A 
     # ---------------------------------------------------------
-    print("\n>>> [2/3] Executando Pessoa 2 (ChiuLiu)...")
+    print("\n>>> [2/3] Executando ChiuLiu...")
     
     edmonds = Edmonds.EdmondsCore(num_nos=num_nos, raiz=0)
     
@@ -95,16 +104,53 @@ def main():
         coords_ciclo = [base_dados.id_para_coord(idx, w) for idx in ciclo]
         print(f"   Coords (L, C): {coords_ciclo}")
         
-        print("\n   PRÓXIMO PASSO (Buno aqui):")
         print("   -> Contrair esses nós em um Super-Nó.")
         print("   -> Ajustar pesos das arestas que entram/saem desse grupo.")
         print("   -> Chamar recursão.")
     else:
         print(f"🟢 RESULTADO: Nenhum ciclo encontrado!")
         print("   A seleção gulosa formou uma Arborescência válida.")
-        print("\n   PRÓXIMO PASSO (Rayssa):")
-        print("   -> A solução é ótima. Basta desenhar a imagem segmentada.")
 
+    print("=========================================")
+
+    # ---------------------------------------------------------
+    # 4. Segmentação
+    # ---------------------------------------------------------
+    
+    LIMIAR_K = 0.08
+
+    print("\n>>> Executando Segmentação...")
+    
+    try:
+        # Segmentar
+        rotulos_map = segmentacao.segmentar_arborescencia(
+            pais=pais, 
+            limiar=LIMIAR_K, 
+            num_pixels=num_nos, 
+            dimensoes=(h, w)
+        )
+        
+        num_segmentos = np.unique(rotulos_map).size
+        print(f"   -> Segmentação concluída: {num_segmentos} segmentos criados.")
+
+        # Visualizar
+        print("\n   -> Gerando imagem final...")
+        
+        nome_saida = f"src/segmentacao/resultado_final_k{LIMIAR_K}.png"
+        
+        visualizacao.visualizar_segmentacao_lab(
+            img_rgb_normalizada=img,   
+            rotulos_map=rotulos_map,   
+            salvar_arquivo=nome_saida  
+        )
+
+    except Exception as e:
+        print(f"\n❌ ERRO durante a etapa de segmentação: {e}")
+        traceback.print_exc()
+
+    print("=========================================")
+    print("\n=========================================")
+    print(" INTEGRAÇÃO CONCLUÍDA")
     print("=========================================")
 
 if __name__ == "__main__":

@@ -7,9 +7,6 @@ Unifica:
  - cálculo de pesos entre pixels (distância de cor)
  - salvamento em .npz e .csv
  - funções simples de inspeção/visualização
-
-Uso:
-  python base_dados.py --img imagens/exemplo.jpg --out dados/edges_saida --maxsize 300 --neigh 4
 """
 
 from typing import Tuple, List, Dict
@@ -104,7 +101,7 @@ def calcular_pesos_por_cor(img_rgb_normalizada: np.ndarray, lista_arestas: List[
         return img_rgb_normalizada[l, c]  # vetor [R,G,B]
 
     pesos: List[Tuple[int,int,float]] = []
-    # usar tqdm para ver progresso em imagens maiores
+
     for (u, v) in tqdm(lista_arestas, desc="Calculando pesos"):
         cor_u = cor_por_id(u)
         cor_v = cor_por_id(v)
@@ -127,7 +124,7 @@ def salvar_arestas_npz(caminho_saida: str, altura: int, largura: int, pesos_ares
     w_arr = np.array([t[2] for t in pesos_arestas], dtype=np.float32)
     meta = metadados.copy() if metadados else {}
     meta.update({"altura": altura, "largura": largura})
-    # meta salvo como objeto para manter dicionário
+
     np.savez_compressed(caminho_saida + ".npz", u=u_arr, v=v_arr, w=w_arr, meta=np.array([meta], dtype=object))
     print(f"Salvo {len(u_arr)} arestas em {caminho_saida}.npz")
 
@@ -196,7 +193,7 @@ def plot_histograma_pesos(pesos_arestas: List[Tuple[int,int,float]], numero_bins
         
 def desenhar_overlay_grafo(img_rgb_normalizada: np.ndarray, lista_arestas: List[Tuple[int,int,float]], max_arestas: int = 1000):
     """
-    Desenha uma amostra das arestas sobre a imagem. Só usar com imagens pequenas/reduzidas.
+    Desenha uma amostra das arestas sobre a imagem
     """
     try:
         import networkx as nx
