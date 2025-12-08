@@ -22,7 +22,6 @@ class UnionFind:
         root_j = self.find(j)
 
         if root_i != root_j:
-            # Union by Size
             if self.size[root_i] < self.size[root_j]:
                 root_i, root_j = root_j, root_i
             
@@ -34,7 +33,7 @@ class UnionFind:
 
 def segmentar_arborescencia(
     pais: Dict[int, Tuple[int, float]], # ID do nó(filho), tupla(ID do pai, peso)
-    limiar: float, # Valor de Corte
+    limiar: float, # Valor de Corte (limiar k)
     num_pixels: int, 
     dimensoes: Tuple[int, int]
 ) -> np.ndarray:

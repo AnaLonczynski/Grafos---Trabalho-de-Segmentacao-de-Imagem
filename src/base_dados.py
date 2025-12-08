@@ -1,14 +1,3 @@
-
-"""
-base_dados.py
-Unifica:
- - leitura e normalização de imagem
- - construção de grafo DIRECIONADO (4 ou 8 vizinhos)
- - cálculo de pesos entre pixels (distância de cor)
- - salvamento em .npz e .csv
- - funções simples de inspeção/visualização
-"""
-
 from typing import Tuple, List, Dict
 import numpy as np
 import cv2
@@ -18,7 +7,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 # -----------------------
-# Utilitários de ID <-> coordenada
+# ID <-> coordenada
 # -----------------------
 def coord_para_id(linha: int, coluna: int, largura: int) -> int:
     return linha * largura + coluna
@@ -113,48 +102,7 @@ def calcular_pesos_por_cor(img_rgb_normalizada: np.ndarray, lista_arestas: List[
     return pesos
 
 # -----------------------
-# Salvamento / Leitura
-# -----------------------
-def salvar_arestas_npz(caminho_saida: str, altura: int, largura: int, pesos_arestas: List[Tuple[int,int,float]], metadados: Dict = None):
-    """
-    Salva arrays u, v, w e metadados em arquivo .npz comprimido.
-    """
-    u_arr = np.array([t[0] for t in pesos_arestas], dtype=np.int32)
-    v_arr = np.array([t[1] for t in pesos_arestas], dtype=np.int32)
-    w_arr = np.array([t[2] for t in pesos_arestas], dtype=np.float32)
-    meta = metadados.copy() if metadados else {}
-    meta.update({"altura": altura, "largura": largura})
-
-    np.savez_compressed(caminho_saida + ".npz", u=u_arr, v=v_arr, w=w_arr, meta=np.array([meta], dtype=object))
-    print(f"Salvo {len(u_arr)} arestas em {caminho_saida}.npz")
-
-def carregar_arestas_npz(caminho_npz: str) -> Tuple[int,int,List[Tuple[int,int,float]],Dict]:
-    """
-    Carrega arquivo .npz gerado por salvar_arestas_npz e retorna (altura, largura, lista_de_(u,v,w), meta)
-    """
-    d = np.load(caminho_npz, allow_pickle=True)
-    u_arr = d["u"].astype(np.int32)
-    v_arr = d["v"].astype(np.int32)
-    w_arr = d["w"].astype(np.float32)
-    meta = d["meta"][0].item() if "meta" in d else {}
-    altura = meta.get("altura")
-    largura = meta.get("largura")
-    lista_pesos = list(zip(u_arr.tolist(), v_arr.tolist(), w_arr.tolist()))
-    return altura, largura, lista_pesos, meta
-
-def salvar_arestas_csv(caminho_csv: str, pesos_arestas: List[Tuple[int,int,float]]):
-    """
-    Salva arestas em CSV com cabeçalho u,v,w — útil para inspeção humana (Excel/Sheets).
-    """
-    with open(caminho_csv, mode="w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["u","v","w"])
-        for u, v, w in pesos_arestas:
-            writer.writerow([u, v, f"{w:.6f}"])
-    print(f"CSV salvo em {caminho_csv}")
-
-# -----------------------
-# Inspeção rápida / Visualizações
+# Inspeção rápida
 # -----------------------
 def estatisticas_rapidas(altura: int, largura: int, pesos_arestas: List[Tuple[int,int,float]]):
     """
@@ -176,50 +124,8 @@ def estatisticas_rapidas(altura: int, largura: int, pesos_arestas: List[Tuple[in
     print(f"Estimativa (direcionado) 4-neigh: {2 * n_undirected_4}, 8-neigh: {2 * n_undirected_8}")
     print("============================")
 
-def plot_histograma_pesos(pesos_arestas: List[Tuple[int,int,float]], numero_bins: int = 50, salvar_caminho: str = None, exibir: bool = True):
-    pesos = np.array([t[2] for t in pesos_arestas], dtype=np.float32)
-    plt.figure(figsize=(6,4))
-    plt.hist(pesos, bins=numero_bins)
-    plt.title("Histograma de pesos (distância de cor)")
-    plt.xlabel("Peso")
-    plt.ylabel("Frequência")
-    if salvar_caminho:
-        plt.savefig(salvar_caminho, bbox_inches="tight", dpi=150)
-        print(f"Histograma salvo em {salvar_caminho}")
-    if exibir:
-        plt.show()
-    else:
-        plt.close()
-        
-def desenhar_overlay_grafo(img_rgb_normalizada: np.ndarray, lista_arestas: List[Tuple[int,int,float]], max_arestas: int = 1000):
-    """
-    Desenha uma amostra das arestas sobre a imagem
-    """
-    try:
-        import networkx as nx
-    except Exception:
-        print("networkx não instalado — pip install networkx para overlay do grafo.")
-        return
-    altura, largura = img_rgb_normalizada.shape[:2]
-    G = nx.DiGraph()
-    for linha in range(altura):
-        for coluna in range(largura):
-            idx = coord_para_id(linha, coluna, largura)
-            G.add_node(idx, pos=(coluna, altura - 1 - linha))
-    amostra_arestas = [(u, v) for (u, v, _) in lista_arestas[:max_arestas]]
-    for u, v in amostra_arestas:
-        G.add_edge(u, v)
-    pos = nx.get_node_attributes(G, 'pos')
-    plt.figure(figsize=(6,6))
-    plt.imshow(img_rgb_normalizada)
-    nx.draw_networkx_nodes(G, pos, node_size=5)
-    nx.draw_networkx_edges(G, pos, arrowstyle='->', arrowsize=6, width=0.5)
-    plt.title("Overlay do grafo (amostra)")
-    plt.axis('off')
-    plt.show()
-
 # -----------------------
-# Pipeline principal (tudo integrado)
+# Integração
 # -----------------------
 def pipeline_unificado(caminho_imagem: str,
                        caminho_saida_base: str,
@@ -227,7 +133,7 @@ def pipeline_unificado(caminho_imagem: str,
                        vizinhanca: str = "4",
                        gerar_plots: bool = True) -> Tuple[np.ndarray, List[Tuple[int,int,float]]]:
     """
-    Executa pipeline completo: leitura -> gerar arestas direcionadas -> calcular pesos -> salvar .npz e .csv -> inspeção.
+    leitura -> gerar arestas direcionadas -> calcular pesos
     Retorna (imagem_normalizada, lista_de_(u,v,w)).
     """
     img = carregar_imagem_rgb_normalizada(caminho_imagem, max_lado)
@@ -237,46 +143,9 @@ def pipeline_unificado(caminho_imagem: str,
     print(f"Arestas direcionadas geradas: {len(arestas)}")
     pesos = calcular_pesos_por_cor(img, arestas)
 
-    # salvar .npz e .csv
-    metadados = {"origem": os.path.basename(caminho_imagem), "vizinhanca": vizinhanca}
-    salvar_arestas_npz(caminho_saida_base, altura, largura, pesos, metadados)
-    salvar_arestas_csv(caminho_saida_base + ".csv", pesos)
-
     # inspeção
     estatisticas_rapidas(altura, largura, pesos)
     if gerar_plots:
-        plot_histograma_pesos(pesos, numero_bins=50, salvar_caminho=caminho_saida_base + "_hist.png", exibir=True)
         if max(altura, largura) <= 150:
             desenhar_overlay_grafo(img, pesos, max_arestas=500)
     return img, pesos
-
-# -----------------------
-# Execução via CLI
-# -----------------------
-if __name__ == "__main__":
-    # Caminho da imagem que será processada
-    caminho_imagem = "/home/ana/Grafos---Trabalho-de-Segmentacao-de-Imagem/jiji.jpg"  
-
-    # Prefixo dos arquivos de saída (vai gerar .npz e .csv)
-    caminho_saida = "/home/ana/Grafos---Trabalho-de-Segmentacao-de-Imagem/src/dados"
-    # Mudar o nome se quiser separar os resultados
-
-    # Tamanho máximo permitido para o lado maior da imagem
-    max_lado_imagem = None  
-    # Aumentar para 300–400 deixa mais detalhes, mas pesa mais na memória
-
-    # Tipo de vizinhança: "4" ou "8"
-    vizinhanca_pixels = "8"
-    # Trocar para "8" aumenta a quantidade de ligações no grafo
-
-    # Gerar (True) ou não gerar (False) as imagens de visualização
-    gerar_plots = True  
-
-    # Chamada direta do pipeline
-    pipeline_unificado(
-        caminho_imagem,
-        caminho_saida,
-        max_lado=max_lado_imagem,
-        vizinhanca=vizinhanca_pixels,
-        gerar_plots=gerar_plots
-    )

@@ -1,7 +1,7 @@
 """
 Algoritmo de Edmond e Chiliu Chuliu Chiuliu
 Descrição: Implementa a fase inicial do algoritmo de Chu-Liu / Edmonds.
-           1. Seleção Gulosa (Greedy) dos pais de menor custo.
+           1. Seleção Gulosa dos pais de menor custo.
            2. Detecção de Ciclos na seleção feita.
 """
 
@@ -61,24 +61,21 @@ class EdmondsCore:
             if visitados_geral[i]:
                 continue
             
-            # Rastreamento do caminho atual para achar back-edges
+            # Rastreamento do caminho atual para achar arestas de retorno
             caminho_atual = []
             conjunto_caminho = set() # Para busca O(1)
             
             curr = i
             
-            # Navega "para cima" seguindo os pais
             while curr is not None:
                 if curr in conjunto_caminho:
-                    # ACHAMOS UM CICLO!
                     # O ciclo começa na primeira ocorrência de 'curr' no caminho_atual até o fim
                     indice_inicio = caminho_atual.index(curr)
                     ciclo = caminho_atual[indice_inicio:]
                     return ciclo
                 
                 if visitados_geral[curr]:
-                    # Encontramos um nó já processado anteriormente que não formou ciclo
-                    # ou leva à raiz. Podemos parar este ramo.
+                    # nó já processado anteriormente que não formou ciclo.
                     break
                 
                 # Marcação

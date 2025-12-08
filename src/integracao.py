@@ -1,11 +1,7 @@
-"""
-integracao.py
-Objetivo: Testar a união do trabalho da Pessoa 1 com a Pessoa 2.
-"""
-
 import sys
 import os
 import numpy as np
+import time
 
 # Imports dos modulos
 try:
@@ -36,17 +32,21 @@ except ImportError:
 # Método Main
 
 def main():
-
-    caminho_imagem = "totoro_rebaixado.jpg" 
-    max_lado = None  # Tem que ser ajustado a depender da imagem
+    
+    # tempo de execução
+    inicio_total = time.time()
+    
+    caminho_imagem = "gato.jpg" 
+    max_lado = 600  # controle de tamaho da imagem
     vizinhanca = "8"
     
     print("=========================================")
     print(" INICIANDO INTEGRAÇÃO")
     print("=========================================")
 
+   
     # ---------------------------------------------------------
-    # 1. Executar Engenharia de Dados 
+    # 1. Criar Grafo
     # ---------------------------------------------------------
     print("\n>>> [1/3] Executando base_dados...")
     
@@ -59,6 +59,7 @@ def main():
         cv2.imwrite("teste_temp.jpg", img_temp)
         caminho_imagem = "teste_temp.jpg"
 
+    t0 = time.time()
     # Cria grafo e calcula pesos
     img, lista_pesos = base_dados.pipeline_unificado(
         caminho_imagem=caminho_imagem,
@@ -74,7 +75,7 @@ def main():
     print(f"   -> Total de arestas calculadas: {len(lista_pesos)}")
 
     # ---------------------------------------------------------
-    # 2. Executar Algoritmo Core A 
+    # 2. Executar Algoritmo
     # ---------------------------------------------------------
     print("\n>>> [2/3] Executando ChiuLiu...")
     
@@ -100,7 +101,7 @@ def main():
         print(f"   Tamanho do ciclo: {len(ciclo)} nós")
         print(f"   Nós envolvidos (ID): {ciclo}")
         
-        # Converter IDs para coordenadas (Linha, Coluna) para ficar legível
+        # Converter IDs para coordenadas (Linha, Coluna)
         coords_ciclo = [base_dados.id_para_coord(idx, w) for idx in ciclo]
         print(f"   Coords (L, C): {coords_ciclo}")
         
@@ -117,7 +118,7 @@ def main():
     # 4. Segmentação
     # ---------------------------------------------------------
     
-    LIMIAR_K = 0.08
+    LIMIAR_K = 0.05  # Variável de Controle
 
     print("\n>>> Executando Segmentação...")
     
@@ -148,10 +149,12 @@ def main():
         print(f"\n❌ ERRO durante a etapa de segmentação: {e}")
         traceback.print_exc()
 
-    print("=========================================")
-    print("\n=========================================")
-    print(" INTEGRAÇÃO CONCLUÍDA")
-    print("=========================================")
+    fim_total = time.time()
+    tempo_total = fim_total - inicio_total
+    
+    print("========================================")
+    print(f"🏁 TEMPO TOTAL DE EXECUÇÃO: {tempo_total:.4f} segundos")
+    print("========================================")
 
 if __name__ == "__main__":
     main()
