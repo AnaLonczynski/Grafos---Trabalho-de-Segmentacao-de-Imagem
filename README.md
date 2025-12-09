@@ -38,13 +38,24 @@
 ├── 📝 README.md
 └── 📦 SegmentacaoGrafos_Grupo6.zip
 
-## ⚙️ Compilar e Executar
-
-💻 Windows
-python integracao.py
-
-🐧 Linux / macOS
-python3 integracao.py
-
-
 ```
+
+## ⚙️ Como compilar e executar
+
+#### Dependências para SegmentacaoGrafos_Grupo6
+- numpy
+- opencv-python
+- matplotlib
+- scikit-image
+- scipy
+- tqdm
+- pandas
+
+Este projeto pode ser executado a partir do terminal. Certifique-se de ter as dependências necessárias instaladas
+
+| Sistema Operacional | Comando de Execução |
+| :--- | :--- |
+| **💻 Windows** | `python integracao.py` |
+| **🐧 Linux / macOS** | `python3 integracao.py` |
+
+
