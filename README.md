@@ -1,4 +1,4 @@
-<img width="512" height="512" alt="image" src="https://github.com/user-attachments/assets/6c263488-51c5-459a-aba6-5b3143e402ed" /># <img src="https://wiki.hypixel.net/images/4/47/SkyBlock_items_enchanted_cobweb.gif" width="40" height="40"> Arvores Geradoras
+# <img src="https://wiki.hypixel.net/images/4/47/SkyBlock_items_enchanted_cobweb.gif" width="40" height="40"> Arvores Geradoras
 
 > 🧠 **Grafos** - Trabalho Prático de Segmentação de imagem
 
