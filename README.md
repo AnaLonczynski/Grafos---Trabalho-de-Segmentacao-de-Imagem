@@ -1,4 +1,4 @@
-# <img src="https://wiki.hypixel.net/images/4/47/SkyBlock_items_enchanted_cobweb.gif" width="40" height="40"> Arvores Geradoras
+<img width="512" height="512" alt="image" src="https://github.com/user-attachments/assets/6c263488-51c5-459a-aba6-5b3143e402ed" /># <img src="https://wiki.hypixel.net/images/4/47/SkyBlock_items_enchanted_cobweb.gif" width="40" height="40"> Arvores Geradoras
 
 > 🧠 **Grafos** - Trabalho Prático de Segmentação de imagem
 
@@ -26,23 +26,25 @@
 
 ```
 📦SegmentacaoGrafos_Grupo6/
-│
+├── 📁 Entrega 1/src
 ├── 📁 src/
-│   ├── construir_grafo.py
-│   ├── gerar_arvore_minima.py
-│   ├── segmentar_imagem.py
-|   ├── preprocs.py
-│   ├── main.py
+│   ├── 📁 segmentacao
+│   ├── Edmonds.py
+│   ├── base_dados.py
+|   ├── integracao.py
+│   ├── segmentacao.py
+│   ├── visualizacao.py
 │
-├── 📁 imagens/
-│   └── teste1.png
-│
-├── 📁 resultados/
-│   └── teste1_segmentada.png
-│
-├── 📝 relatorio.tex
-├── 📝 relatorio.pdf
 ├── 📝 README.md
 └── 📦 SegmentacaoGrafos_Grupo6.zip
+
+## ⚙️ Compilar e Executar
+
+💻 Windows
+python integracao.py
+
+🐧 Linux / macOS
+python3 integracao.py
+
 
 ```
